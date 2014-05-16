@@ -1,7 +1,5 @@
 package cz.maartyl.RedBlack
 
-// 2-3 RedBlack Tree : onle left child could ever be red...
-
 import scala.annotation.tailrec
 
 class RBMap[K, B](
@@ -21,24 +19,31 @@ class RBMap[K, B](
     loop(root)
   }
   def findNode(key: K): Option[Node] = findNode(key, root)
-  @tailrec private def findNode(key: K, n: Node): Option[Node] =
+  @tailrec private def findNode(key: K, n: Node): Option[Node] = if (n.isNil) None else
     ordering.compare(key, n.key) match {
-      case c if c < 0 => if (n.hasLeft) findNode(key, n.left) else None
-      case c if c > 0 => if (n.hasRight) findNode(key, n.right) else None
+      case c if c < 0 => findNode(key, n.left)
+      case c if c > 0 => findNode(key, n.right)
       case _ => Some(n)
     }
 
-  private def copy[B1](root: RBNode[K, B1], inc: Int) = new RBMap[K, B1](root, size + inc)(ordering)
+  private def copy[B1](root: RBNode[K, B1], inc: Int) = if (size + inc > 0) new RBMap[K, B1](root, size + inc)(ordering) else new RBEmpty[K, B1]()(ordering)
+  def copy = copy[B](root, 0) //public, not exported to BinTree interface
+
+  def withoutFirst: BinTree[K, B] = copy[B](withoutFirst(root), -1)
+  def withoutLast: BinTree[K, B] = copy(withoutLast(root), -1)
+  private def withoutFirst(n: Node): Node = n.asRed.withoutFirst.asBlack
+  private def withoutLast(n: Node): Node = n.asRed.withoutLast.asBlack
 
   //returns new tree without node with given key, if present, otherwise itself
-  def without(key: K): BinTree[K, B] = {
+  def without(key: K): BinTree[K, B] = findNode(key) match {
+    case None => this
+    case Some(found) => {
+      def recur(n: Node): Node = {
+        n
+      }
 
-    def recur(n: Node): Node = {
-      n
+      copy(recur(root).asBlack, -1)
     }
-
-    val changed = contains(key)
-    copy(recur(root), if (changed) -1 else 0)
   }
 
   //returns new tree with node added/changed (conjugate)
@@ -51,11 +56,8 @@ class RBMap[K, B](
         ordering.compare(key, n.key) match {
           case c if c < 0 => n.balanceLeft(recur(n.left))
           case c if c > 0 => n.balanceRight(recur(n.right))
-          case _ => { //just new value
-            changed = false;
-            val RBN(l, clr, k, _, r) = n;
-            RBN(l, clr, k, vv, r)
-          } 
+          case _ => n.copy(v = { changed = false; vv }) //just new value // more readable
+          //case _ => { changed = false; n.copy(v = vv) } //just new value
         }
       }
     val newroot = recur(root).asBlack //side effect: order enforcement (why splitted into 2 lines)
@@ -136,8 +138,7 @@ object RBMap extends BinTreeObj {
   def empty[A, B](implicit ord: Ordering[A]) = new RBEmpty[A, B]()(ord)
 
   def htmlDumpBase(tree: scala.xml.Elem) =
-    """<!DOCTYPE HTML>
-<html><head><style>
+    """<!DOCTYPE HTML><html><head><style>
 	body {
 		background: #888888 ;
 		color: white;

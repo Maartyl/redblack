@@ -31,7 +31,7 @@ trait BinTree[K, +B]
   def mapnil: BinTree[K, B] //can't use empty directly 
   protected[this] def builderCreate: Builder[(K, B), BinTree[K, B]] //can't delegate newBuilder directly
 
-  def firstNode: BinTreeNode[K, B] //smallest key //could return null in empty Tree
+  def firstNode: BinTreeNode[K, B] //smallest key //err in empty tree
   def lastNode: BinTreeNode[K, B] //largest key
   def without(key: K): BinTree[K, B] //returns new tree without given key 
   def findNode(key: K): Option[BinTreeNode[K, B]]
@@ -40,7 +40,7 @@ trait BinTree[K, +B]
   override def iterator: Iterator[(K, B)]
   
   def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3])
-  def htmlDump() : String
+  def htmlDump : String
 
   //implemented methods:
 
