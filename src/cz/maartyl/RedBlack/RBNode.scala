@@ -24,22 +24,9 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
   def isRedLeaf = !(black || hasLeft || hasRight)
   def is2 = black && left.black && right.black
   def is3 = black && left.red && right.black
-
-  //  //does this 2-3 node contain key k?
-  //  def hasKey[TK >: K](k: TK, comp: (TK, TK) => Boolean): Boolean = hasKey({ comp(k, _) })
-  //  //takes equality predicate
-  //  def hasKey[TK >: K](eq: TK => Boolean) = eq(key) || (if (is3) eq(left.key) else false)
-  //
-  //  //delete value from 3-node: just change to 2-node //no checking
-  //  def without3[TK >: K](eq: TK => Boolean) = if (eq(key))
-  //    RBN(left.left, Black, left.key, left.value, RBNil)
-  //  else this // TODO ! (probably impossible...)
-
-  def condFlip() = {
-    if (left.red && right.red)
-      copy(left.asOpposite, !clr, r = right.asOpposite)
-    else this
-  }
+  def blb = black && left.black
+  def blr = black && left.red
+  def rrb = red && right.black
 
   def copy[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, c: RBColor = clr,
                                 k: TK = key, v: TV = value,
@@ -79,9 +66,9 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
 
   //invariant: deleted node (this) is always Red
   def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (!hasLeft) RBNil else //actually delete
-  if (left.red) copy(l = left.withoutFirst) //ok: no need to balance
-  else if (left.black && left.left.black)
-    if (right.black && right.left.red) {
+  if (left.red) copy(l = left.withoutFirst) //no need to balance
+  else if (left.blb)
+    if (right.blr) {
       val RBN(l, _, k, v, r) = right.left
       RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right.copy(l = r))
     } else balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
@@ -94,8 +81,8 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
 
     if (black) throw new Exception("Invariant broken: must be red") else if (!hasRight) RBNil
     else if (left.red) withoutLastBalance(this)
-    else if (right.black && right.left.black)
-      if (left.black && left.left.red)
+    else if (right.blb)
+      if (left.blr)
         left.copy(l = left.left.asBlack, c = Red, r = balanceRight(right.asRed.withoutLast, left.right, Black))
       else balanceRight(right.asRed.withoutLast, left.asRed, Black)
     else copy(r = withoutLastBalance(right)) //skip
