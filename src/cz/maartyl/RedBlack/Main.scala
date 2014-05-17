@@ -4,16 +4,33 @@ import scala.util.Random
 import scala.annotation.tailrec
 
 object Main {
-  var t: BinTree[Int, Int] = _
+  type BTI = BinTree[Int, Int]
+  val stack = scala.collection.mutable.Stack[BTI]()
   val FILE = "/tmp/maallrb.html"
+
+  def push(t: BTI) = stack.push(t)
+  def pop: BTI = if (!stack.isEmpty) stack.pop else vars("dflt")
+  def t = if (stack.isEmpty) vars("dflt") else stack.head
+  
+  var vars: BinTree[String, BTI] = RBMap("dflt" -> RBMap[Int, Int]()) // I use my RBMap for dictionary ^^
+  
+  def save(name:String, g:BTI) = {
+    vars += (name -> g)
+  }
+  def load(name:String) = {
+    vars.get(name) match {
+      case None => vars("dflt")
+      case Some(g) => g
+    }
+  }
 
   def main(args: Array[String]): Unit = {
 
     val rng = 0 to 5 //3917
     val srng = Random shuffle rng zip rng
-    t = RBMap(srng: _*)
+    push(RBMap(srng: _*))
 
-    spittree
+    spithtml
 
     //println(t)
 
@@ -21,32 +38,63 @@ object Main {
 
   }
 
-  @tailrec def readLineLoop(f: String => Unit): Unit = Option(readLine) match {
-    case None => ()
-    case Some(row) => { f(row); readLineLoop(f) }
+  @tailrec private def repl: Unit = {
+    try {
+      for (line <- io.Source.stdin.getLines) { interactive(line); spithtml }
+    } catch {
+      case e: Exception => {
+        println(e.getMessage())
+
+        print("Restart? (y/n): ")
+        if (readLine match {
+          case r"[nN]" => false
+          case r"[yY]" => true
+          case _ => false
+        }) repl else throw e
+      }
+    }
+
   }
 
-  def repl: Unit = {
-    readLineLoop((x) => { interactive(x); spittree })
-  }
 
   implicit class Regex(sc: StringContext) {
     def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
   }
 
   def interactive(row: String): Unit = row match {
-    case r" *i +(\d+)${ a } +(\d+)${ b } *" => t += (a.toInt -> b.toInt)
-    case r" *d +${ a } *" => t -= a.toInt
-    case r" *df *" => t = t.tail
-    case r" *dl *" => t = t.init
-    case r" *c *" => t = RBMap()
-    case r" *r +(\d+)${ cnt } *" => {
-      val rnd = Random.nextInt / 2 abs
-      val rng = rnd to (rnd + cnt.toInt)
+    case r" *= *([a-zA-Z]+)${ nm }" => save(nm, t)
+    case r" *\@ *([a-zA-Z]+)${ nm }" => push(load(nm)) //'at'
+    case r" *i *(-?\d+)${ a } +(-?\d+)${ b } *" => push(t + (a.toInt -> b.toInt))
+    case r" *d *(-?\d+)${ a } *" => push(t - a.toInt)
+    case r" *df *" => push(t.tail)
+    case r" *dl *" => push(t.init)
+    case r" *p *" => println(t)
+    case r" *c *" => push(RBMap())
+    case r" *z *" => pop
+    case r" *h *" => printHelp
+    case r" *q *" => throw new Exception("Exit")
+    case r" *r *(\d+)${ cnt } *" => {
+      val rnd = Random.nextInt(cnt.toInt * 2) / 2 abs
+      val rng = rnd to (rnd + cnt.toInt -1)
       val srng = Random shuffle rng zip rng
-      t = RBMap(srng: _*)
+      push(RBMap(srng: _*))
     }
-    case _ => println("i key val :nsert; d key :elete; df :el irst; dl :ast; c :lear; r count :andom; q :uit")
+    case _ => println("type h for help")
+  }
+  
+  def printHelp = {
+    println("i key val :insert (int, int)")
+    println("d key     :delete (int)")
+    println("df        :delete first")
+    println("dl        :delete last")
+    println("z         :ctrl-z")
+    println("p         :print")
+    println("c         :clear")
+    println("= name    :save current map under `name` (string)")
+    println("@ name    :load map perviously saved under `name` (string)")
+    println("r size    :build random tree (int)")
+    println("h         :this help")
+    println("q         :quit")
   }
 
   def weirdTraverse = {
@@ -63,7 +111,7 @@ object Main {
     //    println("---")
   }
 
-  def spittree = {
+  def spithtml = {
     val w = new java.io.PrintWriter(FILE, "UTF-8")
     w write t.htmlDump
     w close

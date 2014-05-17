@@ -39,8 +39,12 @@ trait BinTree[K, +B]
 
   override def iterator: Iterator[(K, B)]
   
+  def withoutFirst: BinTree[K, B]
+  def withoutLast: BinTree[K, B]
+  
   def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3])
   def htmlDump : String
+  
 
   //implemented methods:
 
@@ -64,8 +68,8 @@ trait BinTree[K, +B]
   override def lastOption = if (isEmpty) None else Some(last)
 
   override def isEmpty: Boolean = size == 0 //Trees remember their size, doesn't have to count
-  override def tail = without(firstKey)
-  override def init = without(lastKey)
+  override def tail = withoutFirst
+  override def init = withoutLast
   override def empty = mapnil
 
   //drop take slice: very unefficient, but weird anyway

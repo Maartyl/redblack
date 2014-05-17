@@ -10,14 +10,12 @@ class RBMap[K, B](
   def mapnil = RBMap()
   override def toString = "RBMap(%s: %s)".format(size, root)
 
-  def firstNode: Node = {
-    @tailrec def loop(n: Node): Node = if (n.hasLeft) loop(n.left) else n
-    loop(root)
-  }
-  def lastNode: Node = {
-    @tailrec def loop(n: Node): Node = if (n.hasRight) loop(n.right) else n
-    loop(root)
-  }
+  def firstNode: Node = firstNode(root)
+  @tailrec private def firstNode(n: Node): Node = if (n.hasLeft) firstNode(n.left) else n
+
+  def lastNode: Node = lastNode(root)
+  @tailrec private def lastNode(n: Node): Node = if (n.hasRight) lastNode(n.right) else n
+
   def findNode(key: K): Option[Node] = findNode(key, root)
   @tailrec private def findNode(key: K, n: Node): Option[Node] = if (n.isNil) None else
     ordering.compare(key, n.key) match {
@@ -38,11 +36,29 @@ class RBMap[K, B](
   def without(key: K): BinTree[K, B] = findNode(key) match {
     case None => this
     case Some(found) => {
-      def recur(n: Node): Node = {
-        n
+      def recur(n: Node): Node = if (n.isNil) RBNil else {
+        ordering.compare(key, n.key) match {
+          case c if c < 0 => if (n.left.blb)
+            if (n.right.blr) n.right.left.copy(n.copy(recur(n.left.asRed), Black, r = n.right.left.left), Red, r = n.right.copy(n.right.left.right, Black))
+            else n.balanceRight(n.right.asRed, recur(n.left.asRed), Black)
+          else n.copy(l = recur(n.left))
+
+          case c if c > 0 => if (n.left.red) n.left.balanceRight(recur(n.copy(n.left.right, Red)), n.left.left, n.clr) else if (n.red && n.right.blb)
+            if (n.left.blr) n.left.copy(n.left.left.asBlack, Red, r = n.balanceRight(recur(n.right.asRed), n.left.right, Black))
+            else n.balanceRight(recur(n.right.asRed), n.left.asRed, Black)
+          else n.copy(r = recur(n.right))
+
+          case _ => if (n.isRedLeaf) RBNil else if (n.left.red) n.left.balanceRight(recur(n.copy(n.left.right, Red)), c = n.clr) else {
+            val (mk, mv) = firstNode(n.right).pair
+            if (n.left.blb)
+              if (n.right.blr) n.left.balanceRight(n.balanceRight(n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
+              else n.balanceRight(n.right.asRed.withoutFirst, n.left.asRed, Black, mk, mv)
+            else RBN(n.left, Red, mk, mv, n.right.copy(n.right.left.asRed.withoutFirst, Black)) //asRed is wrong here
+          }
+        }
       }
 
-      copy(recur(root).asBlack, -1)
+      copy(recur(root.asRed).asBlack, -1)
     }
   }
 
@@ -128,6 +144,9 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
   //returns actual tree with node added (conjugate)
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] =
     new RBMap[K, B1](RBNode.mkBlackLeaf(key, value), 1)(ordering)
+
+  def withoutFirst: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).first")
+  def withoutLast: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).last")
 
   def htmlDump = RBMap.htmlDumpBase(RBNil.htmlDump)
   def traverse[T, A, D, C](pref: T => A, inf: T => D, postf: T => C, transform: BinTreeNode[K, B] => T = identity _): (Stream[A], Stream[D], Stream[C]) =
