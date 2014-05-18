@@ -38,7 +38,6 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     case _ => throw new Exception("Invalid: rotateLeft")
   }
 
-  //haskell.LLRB inspired balancing
   def balanceRight[TK >: K, TV >: TVal](nr: RBNode[TK, TV], // new right
                                         l: RBNode[TK, TV] = left,
                                         c: RBColor = clr,
@@ -61,7 +60,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     else
       RBN(nl, c, k, v, r)
 
-  def balance[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, // new left
+  def balance[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, //just test, didn't help, not gonna delete it yet
                                    r: RBNode[TK, TV] = right,
                                    c: RBColor = clr,
                                    k: TK = key,
@@ -81,7 +80,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     if (right blr) {
       val RBN(l, _, k, v, r) = right.left
       RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right copy r)
-    } else balance(left.asRed.withoutFirst, right.asRed, Black) //balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
+    } else balanceRight(left.asRed.withoutFirst, right.asRed, Black) //balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
   else copy(left copy left.left.withoutFirst) //skip, left.left cannot be but red
 
   //invariant: deleted node (this) is always Red

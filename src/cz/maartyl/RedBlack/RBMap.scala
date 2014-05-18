@@ -2,6 +2,14 @@ package cz.maartyl.RedBlack
 
 import scala.annotation.tailrec
 
+/**
+ * Main class of RedBlack module
+ * object RBMap creates BinTree implemented as RBMap
+ *
+ *
+ *
+ *
+ */
 
 class RBMap[K, B](
   val root: RBNode[K, B],
@@ -91,7 +99,7 @@ class RBMap[K, B](
   def htmlDump = RBMap htmlDumpBase root.htmlDump
 
   def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3]) = {
-    //lazy traverse: stupid, but funny idea 
+    //lazy traverse: stupid, but funny idea, I just tried how far can one push Scala...
     import scala.collection.mutable.Queue
     val a = Queue[() => T1]()
     val b = Queue[() => T2]()
@@ -106,13 +114,14 @@ class RBMap[K, B](
       c enqueue (() => { postf(t) })
     }
     recur(root)
-    def f[A](q: Queue[() => A]) = q.toStream map { _() }
+    def f[A](q: Queue[() => A]) = q.toStream map { _() } //lazily eval into stream
     (f(a), f(b), f(c))
   }
 
   override def iterator: Iterator[(K, B)] = nodeIterator map { _ pair }
   def nodeIterator: Iterator[Node] = new NodeIterator()
   class NodeIterator extends Iterator[Node] {
+    import cz.maartyl.Pipe._
     //emulates recursion
     private val stack = collection.mutable.Stack[Node]()
     push(root)
@@ -122,13 +131,8 @@ class RBMap[K, B](
         stack push n
         push(n left)
       }
-
     def hasNext: Boolean = !stack.isEmpty
-    def next: Node = {
-      val n = stack.pop
-      push(n right)
-      n
-    }
+    def next: Node = stack.pop |> { n => push(n right); n }
   }
 
 }

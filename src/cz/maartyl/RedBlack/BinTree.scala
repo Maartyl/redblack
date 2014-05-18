@@ -10,12 +10,11 @@ import scala.collection.immutable.Queue
 
 /**
  * This is just a stub to declutter main RBMap from inheritance and stuff.
- * Also Programs will use this Trait for type, thus will be free from implementation details.
- * Implements non-intersting, interop with Scala libraries.
+ * Also Programs will use this Trait for type, thus will be free from implementation details. 
+ * One shouldn't work with implementations directly anyway...
+ * Implements non-intersting, interop with Scala libraries and abstract stubs.
  * 
- * Based on TreeMap Scala 
- * 
- * Also: Interface type: One shouldn't work with implementations anyway...
+ * Based on TreeMap : Scala 
  *
  */
 
@@ -26,6 +25,7 @@ trait BinTree[K, +B]
   with Iterable[(K, B)]
   with Serializable {
 
+  //#abstract:
   override def size: Int
 
   def mapnil: BinTree[K, B] //can't use empty directly 
@@ -33,8 +33,8 @@ trait BinTree[K, +B]
 
   def firstNode: BinTreeNode[K, B] //smallest key //err in empty tree
   def lastNode: BinTreeNode[K, B] //largest key
-  def without(key: K): BinTree[K, B] //returns new tree without given key 
   def findNode(key: K): Option[BinTreeNode[K, B]]
+  def without(key: K): BinTree[K, B] //returns new tree without given key 
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] //returns new tree with node added/changed (conjugate)
 
   override def iterator: Iterator[(K, B)]
@@ -46,24 +46,23 @@ trait BinTree[K, +B]
   def htmlDump : String
   
 
-  //implemented methods:
+  //#implemented methods:
 
   override protected[this] def newBuilder: Builder[(K, B), BinTree[K, B]] = builderCreate
 
-  override def get(key: K) = findNode(key) map { _.value }
+  override def get(key: K) = findNode(key) map { _ value }
   override def contains(key: K) = findNode(key).isDefined
-  override def isDefinedAt(key: K): Boolean = contains(key)
   override def firstKey = firstNode.key
   override def lastKey = lastNode.key
 
   override def head = {
-    val smallest = firstNode
-    (smallest.key, smallest.value)
+    val n = firstNode
+    (n.key, n.value)
   }
   override def headOption = if (isEmpty) None else Some(head)
   override def last = {
-    val greatest = lastNode
-    (greatest.key, greatest.value)
+    val n = lastNode
+    (n.key, n.value)
   }
   override def lastOption = if (isEmpty) None else Some(last)
 
@@ -72,7 +71,7 @@ trait BinTree[K, +B]
   override def init = withoutLast
   override def empty = mapnil
 
-  //drop take slice: very unefficient, but weird anyway
+  //drop take slice: quite unefficient, but weird anyway
   override def drop(n: Int) = {
     if (n <= 0) this
     else if (n >= size) empty
@@ -114,7 +113,7 @@ trait BinTree[K, +B]
    */
   def insert[B1 >: B](key: K, value: B1): BinTree[K, B1] = {
     assert(!contains(key))
-    updated(key, value).asInstanceOf[BinTree[K, B1]]
+    updated(key, value)
   }
   /**
    * A new BinTree with the entry added is returned,

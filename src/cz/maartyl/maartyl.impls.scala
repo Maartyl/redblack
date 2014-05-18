@@ -3,9 +3,9 @@ package cz
 package object maartyl {
   object Pipe {
     implicit class PipedObject[A](val value: A) extends AnyVal {
-      def |>[B](f: A => B): B = f(value)
-      def |>[B](f: (A, A) => B): B = f(value, value)
-      def |>[B](f: (A, A, A) => B): B = f(value, value, value)
+      @inline def |>[B](f: A => B): B = f(value)
+      @inline def |>[B](f: (A, A) => B): B = f(value, value)
+      @inline def |>[B](f: (A, A, A) => B): B = f(value, value, value)
     }
   }
   object Regex {
