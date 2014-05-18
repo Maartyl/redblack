@@ -2,6 +2,8 @@ package cz.maartyl.RedBlack
 
 import scala.util.Random
 import scala.annotation.tailrec
+import cz.maartyl.Pipe._
+import cz.maartyl.Regex._
 
 object Main {
   type BTI = BinTree[Int, Int]
@@ -12,32 +14,19 @@ object Main {
   def pop: BTI = if (!stack.isEmpty) stack pop else vars("dflt")
   def t = if (stack isEmpty) vars("dflt") else stack head
 
-  var vars: BinTree[String, BTI] = RBMap("dflt" -> RBMap[Int, Int]()) // I use my RBMap for dictionary ^^
+  var vars: BinTree[String, BTI] = RBMap("dflt" -> RBMap[Int, Int]()) // I use my RBMap for dictionary ^^ (no delete required...)
 
-  def save(name: String, g: BTI) = {
-    vars += (name -> g)
-  }
-  def load(name: String) = {
-    vars get name match {
-      case None => vars("dflt")
-      case Some(g) => g
-    }
-  }
+  def save(name: String, g: BTI) = vars += (name -> g)
+  def load(name: String) = vars get name getOrElse vars("dflt")
 
   def main(args: Array[String]): Unit = {
-
-    val rng = 0 to 5 //3917
-    val srng = Random shuffle rng zip rng
-    push(RBMap(srng: _*))
-
+    push(RBMap((0 to 5) |> { Random shuffle _ zip _ }: _*))
     spithtml
-
     //println(t)
-
     repl
-
   }
 
+  private class ExitThrw extends Throwable
   @tailrec private def repl: Unit =
     try for (line <- io.Source.stdin.getLines) { interactive(line); spithtml }
     catch {
@@ -53,13 +42,6 @@ object Main {
         }) repl else ()
       }
     }
-
-  private class ExitThrw extends Throwable
-
-  implicit class Regex(sc: StringContext) {
-    def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail map { _ => "x" }: _*)
-  }
-
   def interactive(row: String): Unit = row match {
     case r" *= *([a-zA-Z]+)${ nm }" => save(nm, t)
     case r" *\@ *([a-zA-Z]+)${ nm }" => push(load(nm)) //'at'
@@ -72,12 +54,10 @@ object Main {
     case r" *z *" => pop
     case r" *h *" => printHelp
     case r" *q *" => throw new ExitThrw
-    case r" *r *(\d+)${ cnt } *" => {
-      val rnd = Random.nextInt(cnt.toInt * 2) / 2 abs
-      val rng = rnd to (rnd + cnt.toInt - 1)
-      val srng = Random shuffle rng zip rng
-      push(RBMap(srng: _*))
-    }
+    case r" *r *(\d+)${ cnt } *" => push(RBMap(
+      (Random.nextInt(cnt.toInt * 2) / 2 abs) //random start: 0 - cnt
+        |> (rnd => rnd to (rnd + cnt.toInt - 1))
+        |> { Random shuffle _ zip _ }: _*)) //pair range values randomly
     case s => println("type h for help; %s" format s)
   }
 

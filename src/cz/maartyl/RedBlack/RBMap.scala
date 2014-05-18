@@ -2,6 +2,7 @@ package cz.maartyl.RedBlack
 
 import scala.annotation.tailrec
 
+
 class RBMap[K, B](
   val root: RBNode[K, B],
   override val size: Int)(implicit val ordering: Ordering[K]) extends BinTree[K, B] {
@@ -25,9 +26,9 @@ class RBMap[K, B](
     }
 
   private def copy[B1](root: RBNode[K, B1], inc: Int) = if (size + inc > 0) new RBMap[K, B1](root, size + inc)(ordering) else new RBEmpty[K, B1]()(ordering)
-  def copy = copy[B](root, 0) //public, not exported to BinTree interface
+  def copy = copy[B](root, 0) //public, not exported to BinTree interface, useless...
 
-  def withoutFirst: BinTree[K, B] = copy[B](withoutFirst(root), -1)
+  def withoutFirst: BinTree[K, B] = copy(withoutFirst(root), -1)
   def withoutLast: BinTree[K, B] = copy(withoutLast(root), -1)
   private def withoutFirst(n: Node): Node = n.asRed.withoutFirst.asBlack
   private def withoutLast(n: Node): Node = n.asRed.withoutLast.asBlack
@@ -66,13 +67,13 @@ class RBMap[K, B](
             else RBN(n left, Red, mk, mv, n.right copy (n.right.left.asRed.withoutFirst, Black)) //asRed is wrong here
           }
         }
-
       copy(recur(root asRed)asBlack, -1)
     }
   }
 
   //returns new tree with node added/changed (conjugate)
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] = {
+    import cz.maartyl.Pipe._
     val vv = value.asInstanceOf[B]
     var changed = true //number of elements //could have just called contains... +1 lookup...
 
@@ -84,8 +85,7 @@ class RBMap[K, B](
           case _ => n.copy(v = { changed = false; vv }) //just new value // more readable
           //case _ => { changed = false; n.copy(v = vv) } //just new value
         }
-    val newroot = recur(root).asBlack //side effect: order enforcement (why splitted into 2 lines)
-    copy(newroot, if (changed) 1 else 0)
+    recur(root).asBlack |> { copy(_, if (changed) 1 else 0) } //side effect: order enforcement (why splitted into 2 expressions)
   }
 
   def htmlDump = RBMap htmlDumpBase root.htmlDump
