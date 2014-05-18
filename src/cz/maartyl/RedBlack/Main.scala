@@ -8,9 +8,9 @@ object Main {
   val stack = scala.collection.mutable.Stack[BTI]()
   val FILE = "/tmp/maallrb.html"
 
-  def push(t: BTI) = stack.push(t)
-  def pop: BTI = if (!stack.isEmpty) stack.pop else vars("dflt")
-  def t = if (stack.isEmpty) vars("dflt") else stack.head
+  def push(t: BTI) = stack push t
+  def pop: BTI = if (!stack.isEmpty) stack pop else vars("dflt")
+  def t = if (stack isEmpty) vars("dflt") else stack head
 
   var vars: BinTree[String, BTI] = RBMap("dflt" -> RBMap[Int, Int]()) // I use my RBMap for dictionary ^^
 
@@ -18,7 +18,7 @@ object Main {
     vars += (name -> g)
   }
   def load(name: String) = {
-    vars.get(name) match {
+    vars get name match {
       case None => vars("dflt")
       case Some(g) => g
     }
@@ -43,12 +43,12 @@ object Main {
     catch {
       case e: ExitThrw => println("Exit")
       case e: Exception => {
-        println(e.getMessage())
+        println(e getMessage)
 
         print("Print StackTrace? (y/n/q): ")
         if (readLine match {
           case r"[qQ]" => println("Exit") == e
-          case r"[yY]" => { e.printStackTrace(); true }
+          case r"[yY]" => { e printStackTrace; true }
           case _ => true
         }) repl else ()
       }
@@ -57,7 +57,7 @@ object Main {
   private class ExitThrw extends Throwable
 
   implicit class Regex(sc: StringContext) {
-    def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
+    def r = new util.matching.Regex(sc.parts.mkString, sc.parts.tail map { _ => "x" }: _*)
   }
 
   def interactive(row: String): Unit = row match {
@@ -65,8 +65,8 @@ object Main {
     case r" *\@ *([a-zA-Z]+)${ nm }" => push(load(nm)) //'at'
     case r" *i *(-?\d+)${ a } +(-?\d+)${ b } *" => push(t + (a.toInt -> b.toInt))
     case r" *d *(-?\d+)${ a } *" => push(t - a.toInt)
-    case r" *df *" => push(t.tail)
-    case r" *dl *" => push(t.init)
+    case r" *df *" => push(t tail)
+    case r" *dl *" => push(t init)
     case r" *p *" => println(t)
     case r" *c *" => push(RBMap())
     case r" *z *" => pop
@@ -78,11 +78,11 @@ object Main {
       val srng = Random shuffle rng zip rng
       push(RBMap(srng: _*))
     }
-    case _ => println("type h for help")
+    case s => println("type h for help; %s" format s)
   }
 
   def printHelp = {
-    println("i key val :insert (int, int)")
+    println("i key val :insert (int int)")
     println("d key     :delete (int)")
     println("df        :delete first")
     println("dl        :delete last")

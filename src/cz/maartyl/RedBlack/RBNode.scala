@@ -45,9 +45,9 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
                                         k: TK = key,
                                         v: TV = value) =
     if (black && l.red && nr.red) //slurp (split "4-node")
-      RBN(l.asBlack, Red, k, v, nr.asBlack)
+      RBN(l asBlack, Red, k, v, nr asBlack)
     else if (nr.red) //l.B-> rotate left, switch colors
-      RBN(RBN(l, Red, k, v, nr.left), c, nr.key, nr.value, nr.right)
+      RBN(RBN(l, Red, k, v, nr left), c, nr key, nr value, nr right)
     else
       RBN(l, c, k, v, nr)
 
@@ -57,50 +57,63 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
                                        k: TK = key,
                                        v: TV = value) =
     if (black && nl.red && nl.left.red) //split line and rotate
-      RBN(nl.left.asBlack, Red, nl.key, nl.value, RBN(nl.right, Black, k, v, r))
+      RBN(nl.left.asBlack, Red, nl key, nl value, RBN(nl right, Black, k, v, r))
     else
       RBN(nl, c, k, v, r)
 
+  def balance[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, // new left
+                                   r: RBNode[TK, TV] = right,
+                                   c: RBColor = clr,
+                                   k: TK = key,
+                                   v: TV = value) =
+    if (black && l.red && r.red) //slurp (split "4-node")
+      RBN(l.asBlack, Red, k, v, r asBlack)
+    else if (r.red) //l.B-> rotate left, switch colors
+      RBN(RBN(l, Red, k, v, r.left), c, r key, r value, r right)
+    else if (black && l.red && l.left.red) //split line and rotate
+      RBN(l.left.asBlack, Red, l key, l value, RBN(l right, Black, k, v, r))
+    else
+      RBN(l, c, k, v, r)
+
   //invariant: deleted node (this) is always Red
-  def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil else //actually delete
-  if (left.red) copy(l = left.withoutFirst) //no need to balance
-  else if (left.blb)
-    if (right.blr) {
+  def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil else if (left red) copy(left withoutFirst) //no need to balance
+  else if (left blb)
+    if (right blr) {
       val RBN(l, _, k, v, r) = right.left
-      RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right.copy(r))
-    } else balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
-  else copy(left.copy(left.left.withoutFirst)) //skip, left.left cannot be but red
+      RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right copy r)
+    } else balance(left.asRed.withoutFirst, right.asRed, Black) //balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
+  else copy(left copy left.left.withoutFirst) //skip, left.left cannot be but red
 
   //invariant: deleted node (this) is always Red
   def withoutLast: RBNode[K, TVal] = {
     //stabilization for invariant, rotate and balance
-    def withoutLastBalance(n: RBNode[K, TVal]) = n.left.balanceRight(n.copy(l = n.left.right, c = Red).withoutLast, c = n.clr)
+    def withoutLastBalance(n: RBNode[K, TVal]) = n.left.balanceRight(n.copy(n.left.right, Red) withoutLast, c = n clr)
 
     if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil
-    else if (left.red) withoutLastBalance(this)
-    else if (right.blb)
-      if (left.blr)
-        left.copy(l = left.left.asBlack, c = Red, r = balanceRight(right.asRed.withoutLast, left.right, Black))
-      else balanceRight(right.asRed.withoutLast, left.asRed, Black)
+    else if (left red) withoutLastBalance(this)
+    else if (right blb)
+      if (left blr)
+        left copy (left.left.asBlack, Red, r = balanceRight(right.asRed withoutLast, left right, Black))
+      else balanceRight(right.asRed.withoutLast, left asRed, Black)
     else copy(r = withoutLastBalance(right)) //skip
   }
 
-  override def toString() = "(%s [%s %s: %s] %s)".format(left, clr, key, value, right)
+  override def toString() = "(%s [%s %s: %s] %s)" format (left, clr, key, value, right)
 
   def htmlDump: scala.xml.Elem =
     <table class="tg">
       <tr>
-        <th colspan="2"><div class={ clr.toString.toLowerCase }>{ key } → { value }</div></th>
+        <th colspan="2"><div class={ clr.toString toLowerCase }>{ key } → { value }</div></th>
       </tr>
       <tr>
-        <td>{ left.htmlDump }</td>
-        <td>{ right.htmlDump }</td>
+        <td>{ left htmlDump }</td>
+        <td>{ right htmlDump }</td>
       </tr>
     </table>
 }
 
 object RBNode {
-  def unapply[K, B](n: RBNode[K, B]) = if (n.isNil) None else Some((n.key, n.clr, n.value, n.left, n.right))
+  def unapply[K, B](n: RBNode[K, B]) = if (n isNil) None else Some((n key, n clr, n value, n left, n right))
 
   def mkLeaf[K, V](k: K, v: V) = RBN(RBNil, Red, k, v, RBNil)
   def mkBlackLeaf[K, V](k: K, v: V) = RBN(RBNil, Black, k, v, RBNil)

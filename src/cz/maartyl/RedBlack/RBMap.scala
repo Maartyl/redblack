@@ -8,19 +8,19 @@ class RBMap[K, B](
   protected[this] def builderCreate = RBMap.newBuilder[K, B]
   type Node = RBNode[K, B]
   def mapnil = RBMap()
-  override def toString = "RBMap(%s: %s)".format(size, root)
+  override def toString = "RBMap(%s: %s)" format (size, root)
 
   def firstNode: Node = firstNode(root)
-  @tailrec private def firstNode(n: Node): Node = if (n.hasLeft) firstNode(n.left) else n
+  @tailrec private def firstNode(n: Node): Node = if (n hasLeft) firstNode(n left) else n
 
   def lastNode: Node = lastNode(root)
-  @tailrec private def lastNode(n: Node): Node = if (n.hasRight) lastNode(n.right) else n
+  @tailrec private def lastNode(n: Node): Node = if (n hasRight) lastNode(n right) else n
 
   def findNode(key: K): Option[Node] = findNode(key, root)
-  @tailrec private def findNode(key: K, n: Node): Option[Node] = if (n.isNil) None else
-    ordering.compare(key, n.key) match {
-      case c if c < 0 => findNode(key, n.left)
-      case c if c > 0 => findNode(key, n.right)
+  @tailrec private def findNode(key: K, n: Node): Option[Node] = if (n isNil) None else
+    ordering.compare(key, n key) match {
+      case c if c < 0 => findNode(key, n left)
+      case c if c > 0 => findNode(key, n right)
       case _ => Some(n)
     }
 
@@ -36,38 +36,38 @@ class RBMap[K, B](
   def without(key: K): BinTree[K, B] = findNode(key) match {
     case None => this
     case Some(_) => {
-      def recur(n: Node): Node = if (n.isNil) RBNil else
-        ordering.compare(key, n.key) match {
-          case c if c < 0 => if (n.left.blb)
-            if (n.right.blr)
-              n.right.left.copy(n.copy(recur(n.left.asRed), Black, r = n.right.left.left), Red, r = n.right.copy(n.right.left.right, Black))
+      def recur(n: Node): Node = if (n isNil) RBNil else
+        ordering.compare(key, n key) match {
+          case c if c < 0 => if (n.left blb)
+            if (n.right blr)
+              n.right.left.copy(n.copy(recur(n.left.asRed), Black, r = n.right.left.left), Red, r = n.right copy (n.right.left.right, Black))
             else
               n.balanceRight(n.right.asRed, recur(n.left.asRed), Black)
           else
-            n.copy(l = recur(n.left))
+            n copy recur(n left)
 
-          case c if c > 0 => if (n.left.red)
-            n.left.balanceRight(recur(n.copy(n.left.right, Red)), n.left.left, n.clr)
+          case c if c > 0 => if (n.left red)
+            n.left.balanceRight(recur(n copy (n.left.right, Red)), n.left.left, n clr)
           else if (n.red && n.right.blb)
-            if (n.left.blr)
-              n.left.copy(n.left.left.asBlack, Red, r = n.balanceRight(recur(n.right.asRed), n.left.right, Black))
+            if (n.left blr)
+              n.left copy (n.left.left.asBlack, Red, r = n.balanceRight(recur(n.right.asRed), n.left.right, Black))
             else
               n.balanceRight(recur(n.right.asRed), n.left.asRed, Black)
           else
-            n.copy(r = recur(n.right))
+            n.copy(r = recur(n right))
 
-          case _ => if (n.isRedLeaf) RBNil else if (n.left.red) n.left.balanceRight(recur(n.copy(n.left.right, Red)), c = n.clr) else {
+          case _ => if (n.isRedLeaf) RBNil else if (n.left.red) n.left.balanceRight(recur(n copy (n.left.right, Red)), c = n clr) else {
             val (mk, mv) = firstNode(n.right).pair //has next, successor to swap
-            if (n.left.blb)
-              if (n.right.blr)
-                n.left.balanceRight(n.balanceRight(n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
+            if (n.left blb)
+              if (n.right blr)
+                n.left balanceRight (n balanceRight (n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
               else
-                n.balanceRight(n.right.asRed.withoutFirst, n.left.asRed, Black, mk, mv)
-            else RBN(n.left, Red, mk, mv, n.right.copy(n.right.left.asRed.withoutFirst, Black)) //asRed is wrong here
+                n balanceRight (n.right.asRed.withoutFirst, n.left.asRed, Black, mk, mv)
+            else RBN(n left, Red, mk, mv, n.right copy (n.right.left.asRed.withoutFirst, Black)) //asRed is wrong here
           }
         }
 
-      copy(recur(root.asRed).asBlack, -1)
+      copy(recur(root asRed)asBlack, -1)
     }
   }
 
@@ -77,10 +77,10 @@ class RBMap[K, B](
     var changed = true //number of elements //could have just called contains... +1 lookup...
 
     def recur(n: Node): Node =
-      if (n.isNil) RBNode.mkLeaf(key, vv) else
-        ordering.compare(key, n.key) match {
-          case c if c < 0 => n.balanceLeft(recur(n.left))
-          case c if c > 0 => n.balanceRight(recur(n.right))
+      if (n isNil) RBNode mkLeaf (key, vv) else
+        ordering compare (key, n key) match {
+          case c if c < 0 => n balanceLeft recur(n left)
+          case c if c > 0 => n balanceRight recur(n right)
           case _ => n.copy(v = { changed = false; vv }) //just new value // more readable
           //case _ => { changed = false; n.copy(v = vv) } //just new value
         }
@@ -88,7 +88,7 @@ class RBMap[K, B](
     copy(newroot, if (changed) 1 else 0)
   }
 
-  def htmlDump = RBMap.htmlDumpBase(root.htmlDump)
+  def htmlDump = RBMap htmlDumpBase root.htmlDump
 
   def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3]) = {
     //lazy traverse: stupid, but funny idea 
@@ -99,18 +99,18 @@ class RBMap[K, B](
 
     def recur(n: Node): Unit = {
       lazy val t = transform(n)
-      a.enqueue(() => { pref(t) })
-      if (n.hasLeft) recur(n.left)
-      b.enqueue(() => { inf(t) })
-      if (n.hasRight) recur(n.right)
-      c.enqueue(() => { postf(t) })
+      a enqueue (() => { pref(t) })
+      if (n hasLeft) recur(n left)
+      b enqueue (() => { inf(t) })
+      if (n hasRight) recur(n right)
+      c enqueue (() => { postf(t) })
     }
     recur(root)
     def f[A](q: Queue[() => A]) = q.toStream map { _() }
     (f(a), f(b), f(c))
   }
 
-  override def iterator: Iterator[(K, B)] = nodeIterator map { _.pair }
+  override def iterator: Iterator[(K, B)] = nodeIterator map { _ pair }
   def nodeIterator: Iterator[Node] = new NodeIterator()
   class NodeIterator extends Iterator[Node] {
     //emulates recursion
@@ -119,21 +119,21 @@ class RBMap[K, B](
 
     @tailrec private def push(n: Node): Unit =
       if (!n.isNil) {
-        stack.push(n)
-        push(n.left)
+        stack push n
+        push(n left)
       }
 
     def hasNext: Boolean = !stack.isEmpty
     def next: Node = {
       val n = stack.pop
-      push(n.right)
+      push(n right)
       n
     }
   }
 
 }
 
-//so I don't need to take care of 'null root'
+//so I don't need to take care of 'null root' cases everytime
 class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] {
   import scala.collection.AbstractIterator
   override def size = 0
@@ -145,7 +145,7 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
   def lastNode: Node = throw new IllegalAccessException("(empty RBMap).last")
   def findNode(key: K): Option[Node] = None
   def without(key: K): BinTree[K, B] = this
-  override def iterator: Iterator[(K, B)] = new Iterator[(K, B)] {
+  def iterator: Iterator[(K, B)] = new Iterator[(K, B)] {
     def hasNext = false
     def next = null
   }
@@ -156,9 +156,9 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
   def withoutFirst: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).first")
   def withoutLast: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).last")
 
-  def htmlDump = RBMap.htmlDumpBase(RBNil.htmlDump)
+  def htmlDump = RBMap htmlDumpBase RBNil.htmlDump
   def traverse[T, A, D, C](pref: T => A, inf: T => D, postf: T => C, transform: BinTreeNode[K, B] => T = identity _): (Stream[A], Stream[D], Stream[C]) =
-    (Stream.Empty, Stream.Empty, Stream.Empty)
+    (Stream Empty, Stream Empty, Stream Empty)
 }
 
 object RBMap extends BinTreeObj {
