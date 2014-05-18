@@ -35,28 +35,37 @@ class RBMap[K, B](
   //returns new tree without node with given key, if present, otherwise itself
   def without(key: K): BinTree[K, B] = findNode(key) match {
     case None => this
-    case Some(found) => {
-      def recur(n: Node): Node = if (n.isNil) RBNil else {
+    case Some(_) => {
+      def recur(n: Node): Node = if (n.isNil) RBNil else
         ordering.compare(key, n.key) match {
           case c if c < 0 => if (n.left.blb)
-            if (n.right.blr) n.right.left.copy(n.copy(recur(n.left.asRed), Black, r = n.right.left.left), Red, r = n.right.copy(n.right.left.right, Black))
-            else n.balanceRight(n.right.asRed, recur(n.left.asRed), Black)
-          else n.copy(l = recur(n.left))
+            if (n.right.blr)
+              n.right.left.copy(n.copy(recur(n.left.asRed), Black, r = n.right.left.left), Red, r = n.right.copy(n.right.left.right, Black))
+            else
+              n.balanceRight(n.right.asRed, recur(n.left.asRed), Black)
+          else
+            n.copy(l = recur(n.left))
 
-          case c if c > 0 => if (n.left.red) n.left.balanceRight(recur(n.copy(n.left.right, Red)), n.left.left, n.clr) else if (n.red && n.right.blb)
-            if (n.left.blr) n.left.copy(n.left.left.asBlack, Red, r = n.balanceRight(recur(n.right.asRed), n.left.right, Black))
-            else n.balanceRight(recur(n.right.asRed), n.left.asRed, Black)
-          else n.copy(r = recur(n.right))
+          case c if c > 0 => if (n.left.red)
+            n.left.balanceRight(recur(n.copy(n.left.right, Red)), n.left.left, n.clr)
+          else if (n.red && n.right.blb)
+            if (n.left.blr)
+              n.left.copy(n.left.left.asBlack, Red, r = n.balanceRight(recur(n.right.asRed), n.left.right, Black))
+            else
+              n.balanceRight(recur(n.right.asRed), n.left.asRed, Black)
+          else
+            n.copy(r = recur(n.right))
 
           case _ => if (n.isRedLeaf) RBNil else if (n.left.red) n.left.balanceRight(recur(n.copy(n.left.right, Red)), c = n.clr) else {
-            val (mk, mv) = firstNode(n.right).pair
+            val (mk, mv) = firstNode(n.right).pair //has next, successor to swap
             if (n.left.blb)
-              if (n.right.blr) n.left.balanceRight(n.balanceRight(n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
-              else n.balanceRight(n.right.asRed.withoutFirst, n.left.asRed, Black, mk, mv)
+              if (n.right.blr)
+                n.left.balanceRight(n.balanceRight(n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
+              else
+                n.balanceRight(n.right.asRed.withoutFirst, n.left.asRed, Black, mk, mv)
             else RBN(n.left, Red, mk, mv, n.right.copy(n.right.left.asRed.withoutFirst, Black)) //asRed is wrong here
           }
         }
-      }
 
       copy(recur(root.asRed).asBlack, -1)
     }
@@ -68,14 +77,13 @@ class RBMap[K, B](
     var changed = true //number of elements //could have just called contains... +1 lookup...
 
     def recur(n: Node): Node =
-      if (n.isNil) RBNode.mkLeaf(key, vv) else {
+      if (n.isNil) RBNode.mkLeaf(key, vv) else
         ordering.compare(key, n.key) match {
           case c if c < 0 => n.balanceLeft(recur(n.left))
           case c if c > 0 => n.balanceRight(recur(n.right))
           case _ => n.copy(v = { changed = false; vv }) //just new value // more readable
           //case _ => { changed = false; n.copy(v = vv) } //just new value
         }
-      }
     val newroot = recur(root).asBlack //side effect: order enforcement (why splitted into 2 lines)
     copy(newroot, if (changed) 1 else 0)
   }

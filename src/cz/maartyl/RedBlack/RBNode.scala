@@ -22,11 +22,8 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
   def pair = (key, value)
 
   def isRedLeaf = !(black || hasLeft || hasRight)
-  def is2 = black && left.black && right.black
-  def is3 = black && left.red && right.black
   def blb = black && left.black
   def blr = black && left.red
-  def rrb = red && right.black
 
   def copy[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, c: RBColor = clr,
                                 k: TK = key, v: TV = value,
@@ -47,7 +44,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
                                         c: RBColor = clr,
                                         k: TK = key,
                                         v: TV = value) =
-    if (black && l.red && nr.red) //slurp (split "4-node") (allowing 4-nodes didn't work...)
+    if (black && l.red && nr.red) //slurp (split "4-node")
       RBN(l.asBlack, Red, k, v, nr.asBlack)
     else if (nr.red) //l.B-> rotate left, switch colors
       RBN(RBN(l, Red, k, v, nr.left), c, nr.key, nr.value, nr.right)
@@ -55,31 +52,31 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
       RBN(l, c, k, v, nr)
 
   def balanceLeft[TK >: K, TV >: TVal](nl: RBNode[TK, TV], // new left
+                                       r: RBNode[TK, TV] = right,
                                        c: RBColor = clr,
                                        k: TK = key,
-                                       v: TV = value,
-                                       r: RBNode[TK, TV] = right) =
+                                       v: TV = value) =
     if (black && nl.red && nl.left.red) //split line and rotate
       RBN(nl.left.asBlack, Red, nl.key, nl.value, RBN(nl.right, Black, k, v, r))
     else
       RBN(nl, c, k, v, r)
 
   //invariant: deleted node (this) is always Red
-  def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (!hasLeft) RBNil else //actually delete
+  def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil else //actually delete
   if (left.red) copy(l = left.withoutFirst) //no need to balance
   else if (left.blb)
     if (right.blr) {
       val RBN(l, _, k, v, r) = right.left
-      RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right.copy(l = r))
+      RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right.copy(r))
     } else balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
-  else copy(l = left.copy(l = left.left.withoutFirst)) //skip, left.left cannot be but red
+  else copy(left.copy(left.left.withoutFirst)) //skip, left.left cannot be but red
 
   //invariant: deleted node (this) is always Red
   def withoutLast: RBNode[K, TVal] = {
     //stabilization for invariant, rotate and balance
     def withoutLastBalance(n: RBNode[K, TVal]) = n.left.balanceRight(n.copy(l = n.left.right, c = Red).withoutLast, c = n.clr)
 
-    if (black) throw new Exception("Invariant broken: must be red") else if (!hasRight) RBNil
+    if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil
     else if (left.red) withoutLastBalance(this)
     else if (right.blb)
       if (left.blr)
