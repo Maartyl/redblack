@@ -57,7 +57,7 @@ object Main extends App {
     case r" *r *(\d+)${ cnt } *" => push(RBMap(
       (Random.nextInt(cnt.toInt * 2) / 2 abs) //random start: 0 - cnt
         |> (rnd => rnd to (rnd + cnt.toInt - 1))
-        |> { Random shuffle _ zip _ }: _*)) //pair range values randomly
+        |> { Random shuffle _ zip _ }: _*)) //pair range values randomly and insert unordered
     case s => println("type h for help; %s" format s)
   }
 
