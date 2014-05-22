@@ -5,10 +5,17 @@ import scala.annotation.tailrec
 import cz.maartyl.Pipe._
 import cz.maartyl.Regex._
 
-object Main {
+object Main extends App {
   type BTI = BinTree[Int, Int]
   val stack = scala.collection.mutable.Stack[BTI]()
   val FILE = "/tmp/maallrb.html"
+
+  //#main
+  push(RBMap((0 to 5) |> { Random shuffle _ zip _ }: _*))
+  spithtml
+  //println(t)
+  repl
+  //#/main
 
   def push(t: BTI) = stack push t
   def pop: BTI = if (!stack.isEmpty) stack pop else vars("dflt")
@@ -18,13 +25,6 @@ object Main {
 
   def save(name: String, g: BTI) = vars += (name -> g)
   def load(name: String) = vars get name getOrElse vars("dflt")
-
-  def main(args: Array[String]): Unit = {
-    push(RBMap((0 to 5) |> { Random shuffle _ zip _ }: _*))
-    spithtml
-    //println(t)
-    repl
-  }
 
   private class ExitThrw extends Throwable
   @tailrec private def repl: Unit =
@@ -45,8 +45,8 @@ object Main {
   def interactive(row: String): Unit = row match {
     case r" *= *([a-zA-Z]+)${ nm }" => save(nm, t)
     case r" *\@ *([a-zA-Z]+)${ nm }" => push(load(nm)) //'at'
-    case r" *i *(-?\d+)${ a } +(-?\d+)${ b } *" => push(t + (a.toInt -> b.toInt))
-    case r" *d *(-?\d+)${ a } *" => push(t - a.toInt)
+    case r" *i *(-?\d+)${ k } +(-?\d+)${ v } *" => push(t + (k.toInt -> v.toInt))
+    case r" *d *(-?\d+)${ k } *" => push(t - k.toInt)
     case r" *df *" => push(t tail)
     case r" *dl *" => push(t init)
     case r" *p *" => println(t)
