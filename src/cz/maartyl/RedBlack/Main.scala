@@ -54,6 +54,7 @@ object Main extends App {
     case r" *z *" => pop
     case r" *h *" => printHelp
     case r" *q *" => throw new ExitThrw
+    case r" *dbl *" => push(RBMap(t map { case (k, v) => (2*k,v)} toSeq :_*))
     case r" *r *(\d+)${ cnt } *" => push(RBMap(
       (Random.nextInt(cnt.toInt * 2) / 2 abs) //random start: 0 - cnt
         |> (rnd => rnd to (rnd + cnt.toInt - 1))
@@ -66,6 +67,7 @@ object Main extends App {
     println("d key     :delete (int)")
     println("df        :delete first")
     println("dl        :delete last")
+    println("dbl       :double keys (for insert between)")
     println("z         :ctrl-z")
     println("p         :print")
     println("c         :clear")
