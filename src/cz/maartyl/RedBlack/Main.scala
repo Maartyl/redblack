@@ -48,7 +48,7 @@ object Main extends App {
     case r" *h *" => printHelp
     case r" *q *" => throw new ExitThrw
     case r" *dbl *" => push(RBMap(t map { case (k, v) => (2 * k, v) } toSeq: _*))
-    case r" *seq *([ 0-9-]+)${ s } *" => push(RBMap(s split "[ ]+" map { _ toInt } zip (Stream from 0): _*))
+    case r" *seq *([ 0-9-]+)${ s } *" => push(RBMap(s split " +" map { _ toInt } zip (Stream from 0): _*))
     case r" *r *(\d+)${ cnt } *" => push(RBMap(
       (Random.nextInt(cnt.toInt * 2) / 2 abs) //random start: 0 - cnt
         |> (rnd => rnd to (rnd + cnt.toInt - 1))
@@ -58,13 +58,13 @@ object Main extends App {
 
   def printHelp = {
     println("i key val :insert (int int)")
-    println("i key     :insert, kye also value (int)")
+    println("i key     :insert, key also used as value (int)")
     println("d key     :delete (int)")
     println("df        :delete first")
     println("dl        :delete last")
     println("dbl       :double keys (for insert between) (doesn't preserve shape)") //TODO: hack
     println("seq k k.. :build tree from keys in given order, values are indices[0..] (int[])")
-    println("z         :ctrl-z")
+    println("z         :ctrl-z; undo")
     println("p         :print")
     println("c         :clear")
     println("= name    :save current map under `name` (string)")

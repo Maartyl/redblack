@@ -145,8 +145,8 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
   type Node = RBNode[K, B]
   def mapnil = RBMap()
 
-  def firstNode: Node = throw new IllegalAccessException("(empty RBMap).first")
-  def lastNode: Node = throw new IllegalAccessException("(empty RBMap).last")
+  def firstNode: Node = throw new UnsupportedOperationException("(empty RBMap).first")
+  def lastNode: Node = throw new UnsupportedOperationException("(empty RBMap).last")
   def findNode(key: K): Option[Node] = None
   def without(key: K): BinTree[K, B] = this
   def iterator: Iterator[(K, B)] = new Iterator[(K, B)] {
@@ -157,8 +157,8 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] =
     new RBMap[K, B1](RBNode.mkBlackLeaf(key, value), 1)(ordering)
 
-  def withoutFirst: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).first")
-  def withoutLast: BinTree[K, B] = throw new IllegalAccessException("(empty RBMap).last")
+  def withoutFirst: BinTree[K, B] = throw new UnsupportedOperationException("(empty RBMap).first")
+  def withoutLast: BinTree[K, B] = throw new UnsupportedOperationException("(empty RBMap).last")
 
   def htmlDump = RBMap htmlDumpBase RBNil.htmlDump
   def traverse[T, A, D, C](pref: T => A, inf: T => D, postf: T => C, transform: BinTreeNode[K, B] => T = identity _): (Stream[A], Stream[D], Stream[C]) =

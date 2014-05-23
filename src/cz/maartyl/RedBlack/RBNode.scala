@@ -81,8 +81,8 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     if (right blr) {
       val RBN(l, _, k, v, r) = right.left
       RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right copy r)
-    } else balanceRight(left.asRed withoutFirst, right.asRed, Black) //balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
-  else copy(left copy left.left.withoutFirst) //skip, left.left cannot be but red
+    } else balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
+  else copy(/*left copy */left.left.withoutFirst) //skip, left.left cannot be but red
 
   //invariant: deleted node (this) is always Red
   def withoutLast: RBNode[K, TVal] = {
