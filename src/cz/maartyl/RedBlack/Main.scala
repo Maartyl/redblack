@@ -67,7 +67,7 @@ object Main extends App {
     println("d key     :delete (int)")
     println("df        :delete first")
     println("dl        :delete last")
-    println("dbl       :double keys (for insert between)")
+    println("dbl       :double keys (for insert between) (doesn't preserve shape)") //TODO: hack
     println("z         :ctrl-z")
     println("p         :print")
     println("c         :clear")
