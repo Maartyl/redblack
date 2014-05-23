@@ -43,7 +43,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
                                         c: RBColor = clr,
                                         k: TK = key,
                                         v: TV = value) =
-    if (black && l.red && nr.red) //slurp (split "4-node")
+    if (c ? Black && l.red && nr.red) //slurp (split "4-node")
       RBN(l asBlack, Red, k, v, nr asBlack)
     else if (nr.red) //l.B-> rotate left, switch colors
       RBN(RBN(l, Red, k, v, nr left), c, nr key, nr value, nr right)
@@ -55,7 +55,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
                                        c: RBColor = clr,
                                        k: TK = key,
                                        v: TV = value) =
-    if (black && nl.red && nl.left.red) //split line and rotate
+    if (c ? Black && nl.red && nl.left.red) //split line and rotate
       RBN(nl.left.asBlack, Red, nl key, nl value, RBN(nl right, Black, k, v, r))
     else
       RBN(nl, c, k, v, r)
