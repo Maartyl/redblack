@@ -1,21 +1,20 @@
 package cz.maartyl.RedBlack
 
-import scala.collection.immutable.{ MapLike, SortedMap }
-import scala.collection.SortedMapLike
+import scala.collection.generic.{ ImmutableSortedMapFactory, CanBuildFrom }
+import scala.collection.immutable.{ MapLike, SortedMap, Queue }
+import scala.collection.{ SortedMapLike, GenTraversableOnce }
 import scala.collection.mutable.Builder
-import scala.collection.generic.ImmutableSortedMapFactory
-import scala.collection.generic.CanBuildFrom
-import scala.collection.GenTraversableOnce
-import scala.collection.immutable.Queue
 
 /**
  * This is just a stub to declutter main RBMap from inheritance and stuff.
- * Also Programs will use this Trait for type, thus will be free from implementation details. 
+ * Also Programs should use this Trait for type (or just Map), thus will be free from implementation details.
  * One shouldn't work with implementations directly anyway...
- * Implements non-intersting, interop with Scala libraries and abstract stubs.
  * 
- * Based on TreeMap : Scala 
+ * Implements non-intersting, interop with Scala libraries and abstract stubs.
  *
+ * Based on TreeMap : Scala
+ *
+ * @author  Maartyl
  */
 
 trait BinTree[K, +B]
@@ -25,10 +24,10 @@ trait BinTree[K, +B]
   with Iterable[(K, B)]
   with Serializable {
 
-  //#abstract:
+  //#abstract:  (interface to RBMap)
   override def size: Int
 
-  def mapnil: BinTree[K, B] //can't use empty directly 
+  protected def mapnil: BinTree[K, B] //can't use empty directly 
   protected[this] def builderCreate: Builder[(K, B), BinTree[K, B]] //can't delegate newBuilder directly
 
   def firstNode: BinTreeNode[K, B] //smallest key //err in empty tree
@@ -37,14 +36,13 @@ trait BinTree[K, +B]
   def without(key: K): BinTree[K, B] //returns new tree without given key 
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] //returns new tree with node added/changed (conjugate)
 
-  override def iterator: Iterator[(K, B)]
-  
+  override def iterator: Iterator[(K, B)] //in-order iterator
+
   def withoutFirst: BinTree[K, B]
   def withoutLast: BinTree[K, B]
-  
+
   def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3])
-  def htmlDump : String
-  
+  def htmlDump: String
 
   //#implemented methods:
 
@@ -52,21 +50,21 @@ trait BinTree[K, +B]
 
   override def get(key: K) = findNode(key) map { _ value }
   override def contains(key: K) = findNode(key).isDefined
-  override def firstKey = firstNode.key
-  override def lastKey = lastNode.key
+  override def firstKey = firstNode key
+  override def lastKey = lastNode key
 
   override def head = {
     val n = firstNode
-    (n.key, n.value)
+    (n key, n value)
   }
   override def headOption = if (isEmpty) None else Some(head)
   override def last = {
     val n = lastNode
-    (n.key, n.value)
+    (n key, n value)
   }
   override def lastOption = if (isEmpty) None else Some(last)
 
-  override def isEmpty: Boolean = size == 0 //Trees remember their size, doesn't have to count
+  override def isEmpty = size == 0 //Trees remember their size, doesn't have to count
   override def tail = withoutFirst
   override def init = withoutLast
   override def empty = mapnil

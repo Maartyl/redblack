@@ -1,6 +1,12 @@
 package cz.maartyl.RedBlack
 
-sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
+/**
+ * Represents RBMap tree nodes and thus sub trees
+ * 
+ * @author  Maartyl
+ * */
+
+sealed trait RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
   def isNil: Boolean = false
 
   //#members
@@ -16,30 +22,23 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
 
   def asRed = if (red) this else copy(c = Red)
   def asBlack = if (black) this else copy(c = Black)
-  def asOpposite: RBNode[K, TVal] = copy(c = !clr)
+  def asOpposite: RBNode[K, TVal] = copy(c = !clr) //negates node color
   def hasLeft = left != RBNil
   def hasRight = right != RBNil
   def pair = (key, value)
 
-  def isRedLeaf = !(black || hasLeft || hasRight)
-  def blb = black && left.black
+  def isRedLeaf = !(black || hasLeft || hasRight) //red node with no actual nodes in subtrees (could be easily deleted)
+  def blb = black && left.black //helper methods to make deletion code more readable
   def blr = black && left.red
 
+  //works like clojure assoc; simplifies 'modifying'
   def copy[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, c: RBColor = clr,
                                 k: TK = key, v: TV = value,
                                 r: RBNode[TK, TV] = right) = RBN(l, c, k, v, r)
 
-  def rotateRight[TK >: K, TV >: TVal]: RBNode[TK, TV] = this match {
-    case RBN(RBN(l, c1, k1, v1, m), c2, k2, v2, r) => RBN(l, c1, k1, v1, RBN(m, c2, k2, v2, r))
-    case _ => throw new Exception("Invalid: rotateRight")
-  }
-  def rotateLeft[TK >: K, TV >: TVal]: RBNode[TK, TV] = this match {
-    case RBN(l, c1, k1, v1, RBN(m, c2, k2, v2, r)) => RBN(RBN(l, c1, k1, v1, m), c2, k2, v2, r)
-    case _ => throw new Exception("Invalid: rotateLeft")
-  }
-
+  //called to balance this subtree after right subtree has been changed 
   def balanceRight[TK >: K, TV >: TVal](nr: RBNode[TK, TV], // new right
-                                        l: RBNode[TK, TV] = left,
+                                        l: RBNode[TK, TV] = left, //optional changes of node contetns, in spirit of `copy`
                                         c: RBColor = clr,
                                         k: TK = key,
                                         v: TV = value) =
@@ -50,8 +49,9 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     else
       RBN(l, c, k, v, nr)
 
+  //called to balances this subtree after left subtree has been changed
   def balanceLeft[TK >: K, TV >: TVal](nl: RBNode[TK, TV], // new left
-                                       r: RBNode[TK, TV] = right,
+                                       r: RBNode[TK, TV] = right, //optional changes of node contetns, in spirit of `copy`
                                        c: RBColor = clr,
                                        k: TK = key,
                                        v: TV = value) =
@@ -60,21 +60,8 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     else
       RBN(nl, c, k, v, r)
 
-  def balance[TK >: K, TV >: TVal](l: RBNode[TK, TV] = left, //just test, didn't help, not gonna delete it yet
-                                   r: RBNode[TK, TV] = right,
-                                   c: RBColor = clr,
-                                   k: TK = key,
-                                   v: TV = value) =
-    if (c ? Black && l.red && r.red) //slurp (split "4-node")
-      RBN(l.asBlack, Red, k, v, r asBlack)
-    else if (r red) //l.B-> rotate left, switch colors
-      RBN(RBN(l, Red, k, v, r left), c, r key, r value, r right)
-    else if (c ? Black && l.red && l.left.red) //split line and rotate
-      RBN(l.left asBlack, Red, l key, l value, RBN(l right, Black, k, v, r))
-    else
-      RBN(l, c, k, v, r)
-
-  //invariant: deleted node (this) is always Red
+  //rebalances subtree such that left-most node could be omitted (is RedLeaf) and ommits it
+  //holds invariant: deleted node (this) is always Red
   def withoutFirst: RBNode[K, TVal] = if (black) throw new Exception("Invariant broken: must be red") else if (isRedLeaf) RBNil
   else if (left red) copy(left withoutFirst) //no need to balance
   else if (left blb)
@@ -82,9 +69,10 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
       val RBN(l, _, k, v, r) = right.left
       RBN(RBN(left.asRed.withoutFirst, Black, key, value, l), Red, k, v, right copy r)
     } else balanceRight(right.asRed, left.asRed.withoutFirst, Black) //it is correct order
-  else copy(/*left copy */left.left.withoutFirst) //skip, left.left cannot be but red
+  else copy(left copy left.left.withoutFirst) //skip, left.left cannot be but red // TODO: bug here?
 
-  //invariant: deleted node (this) is always Red
+  //rebalances subtree such that right-most node could be omitted (is RedLeaf) and ommits it
+  //hold invariant: deleted node (this) is always Red
   def withoutLast: RBNode[K, TVal] = {
     //stabilization for invariant, rotate and balance
     def withoutLastBalance(n: RBNode[K, TVal]) = n.left.balanceRight(n.copy(n.left.right, Red)withoutLast, c = n clr)
@@ -100,7 +88,7 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
 
   override def toString() = "(%s [%s %s: %s] %s)" format (left, clr, key, value, right)
 
-  def htmlDump: scala.xml.Elem =
+  def htmlDump: scala.xml.Elem = //creates HTML table representing this node; recursively creates dumps for subtrees 
     <table class="tg">
       <tr>
         <th colspan="2"><div class={ clr.toString toLowerCase }>{ key } → { value }</div></th>
@@ -112,15 +100,15 @@ sealed abstract class RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
     </table>
 }
 
-object RBNode {
-  def unapply[K, B](n: RBNode[K, B]) = if (n isNil) None else Some((n key, n clr, n value, n left, n right))
-
+object RBNode { //just helper methods to create nodes
   def mkLeaf[K, V](k: K, v: V) = RBN(RBNil, Red, k, v, RBNil)
   def mkBlackLeaf[K, V](k: K, v: V) = RBN(RBNil, Black, k, v, RBNil)
 }
 
+//main node implementation; all methods are inherited from RBNode
 case class RBN[K, V](left: RBNode[K, V], clr: RBColor, key: K, value: V, right: RBNode[K, V]) extends RBNode[K, V]
 
+//stub implementation of RBNode, used to represent empty nodes; handles edge conditions
 case object RBNil extends RBNode[Nothing, Nothing] {
   override def clr = Black
   override def key: Nothing = throw new NoSuchElementException("RBNil.key")
@@ -129,15 +117,16 @@ case object RBNil extends RBNode[Nothing, Nothing] {
   override def left = RBNil
   override def right = RBNil
 
-  override def asRed = RBNil
+  override def asRed = throw new UnsupportedOperationException("RBNil cannot become red")
   override def asBlack = RBNil
 
   override def toString() = "()"
   override def htmlDump = <div class="nil"></div>
 }
 
-trait RBColor {
-  def ?(o: RBColor) = this equals o
+//mainly just enum to represent RBNode type; contains simple helper methods
+sealed trait RBColor {
+  def ?(o: RBColor) = this equals o //== misbehaves and equals is long
   def unary_! = if (this ? Red) Black else Red
 }
 case object Red extends RBColor

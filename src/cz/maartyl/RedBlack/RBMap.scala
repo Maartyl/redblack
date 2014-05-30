@@ -6,26 +6,33 @@ import scala.annotation.tailrec
  * Main class of RedBlack module
  * object RBMap creates BinTree implemented as RBMap
  *
+ * to create, call like: RMBap('k1 -> 'v1,  'k2 -> 'v2,  ...)
+ * implements all normal Map trait methods
+ *
+ * on top of that implements:
+ * htmlDump, which returns HTML representation of inner tree sturucture
  *
  *
+ * finding size is O(1)
  *
+ * @author  Maartyl
  */
 
 class RBMap[K, B](
   val root: RBNode[K, B],
   override val size: Int)(implicit val ordering: Ordering[K]) extends BinTree[K, B] {
   protected[this] def builderCreate = RBMap.newBuilder[K, B]
-  type Node = RBNode[K, B]
-  def mapnil = RBMap()
-  override def toString = "RBMap(%s: %s)" format (size, root)
+  protected type Node = RBNode[K, B]
+  protected def mapnil = RBMap()
+  override def toString = "RBMap(%s: %s )" format (size, root)
 
-  def firstNode: Node = firstNode(root)
-  @tailrec private def firstNode(n: Node): Node = if (n hasLeft) firstNode(n left) else n
+  override def firstNode: Node = firstNode(root) //traverses to the left as far as possible, to find node with the smallest key
+  @tailrec private def firstNode(n: Node): Node = if (n hasLeft) firstNode(n left) else n //loopfn
 
-  def lastNode: Node = lastNode(root)
-  @tailrec private def lastNode(n: Node): Node = if (n hasRight) lastNode(n right) else n
+  override def lastNode: Node = lastNode(root) //traverses to the right as far as possible, to find node with the greatest key
+  @tailrec private def lastNode(n: Node): Node = if (n hasRight) lastNode(n right) else n //loopfn
 
-  def findNode(key: K): Option[Node] = findNode(key, root)
+  override def findNode(key: K): Option[Node] = findNode(key, root)
   @tailrec private def findNode(key: K, n: Node): Option[Node] = if (n isNil) None else
     ordering.compare(key, n key) match {
       case c if c < 0 => findNode(key, n left)
@@ -33,16 +40,15 @@ class RBMap[K, B](
       case _ => Some(n)
     }
 
+  //packs necessary checks when 'changing' tree happens; 
   private def copy[B1](root: RBNode[K, B1], inc: Int) = if (size + inc > 0) new RBMap[K, B1](root, size + inc)(ordering) else new RBEmpty[K, B1]()(ordering)
-  def copy = copy[B](root, 0) //public, not exported to BinTree interface, useless...
 
-  def withoutFirst: BinTree[K, B] = copy(withoutFirst(root), -1)
-  def withoutLast: BinTree[K, B] = copy(withoutLast(root), -1)
-  private def withoutFirst(n: Node): Node = n.asRed.withoutFirst.asBlack
-  private def withoutLast(n: Node): Node = n.asRed.withoutLast.asBlack
+  //assures invariant (redness) at start; root is allways black
+  override def withoutFirst: BinTree[K, B] = copy(root.asRed.withoutFirst.asBlack, -1)
+  override def withoutLast: BinTree[K, B] = copy(root.asRed.withoutLast.asBlack, -1)
 
-  //returns new tree without node with given key, if present, otherwise itself
-  def without(key: K): BinTree[K, B] = findNode(key) match {
+  //returns new tree without node with given key, if present, otherwise itself; 2log(n)
+  override def without(key: K): BinTree[K, B] = findNode(key) match {
     case None => this
     case Some(_) => {
       def recur(n: Node): Node = if (n isNil) RBNil else
@@ -66,7 +72,7 @@ class RBMap[K, B](
             n.copy(r = recur(n right))
 
           case _ => if (n.isRedLeaf) RBNil else if (n.left.red) n.left.balanceRight(recur(n copy (n.left.right, Red)), c = n clr) else {
-            val (mk, mv) = firstNode(n.right).pair //has next, successor to swap
+            val (mk, mv) = firstNode(n.right).pair //has next, successor to swap; if not, would have been RedLeaf
             if (n.left blb)
               if (n.right blr)
                 n.left balanceRight (n balanceRight (n.right.asRed.withoutFirst, n.left.right, Black, mk, mv), n.left.left.asBlack, Red)
@@ -80,25 +86,24 @@ class RBMap[K, B](
   }
 
   //returns new tree with node added/changed (conjugate)
-  def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] = {
-    import cz.maartyl.Pipe._
-    val vv = value.asInstanceOf[B]
+  override def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] = {
+    import cz.maartyl.Pipe._ // |> implicit method
     var changed = true //number of elements //could have just called contains... +1 lookup...
 
-    def recur(n: Node): Node =
-      if (n isNil) RBNode mkLeaf (key, vv) else
+    def recur(n: RBNode[K, B1]): RBNode[K, B1] =
+      if (n isNil) RBNode mkLeaf (key, value) else
         ordering compare (key, n key) match {
           case c if c < 0 => n balanceLeft recur(n left)
           case c if c > 0 => n balanceRight recur(n right)
-          case _ => n.copy(v = { changed = false; vv }) //just new value // more readable
-          //case _ => { changed = false; n.copy(v = vv) } //just new value
+          case _ => n.copy(v = { changed = false; value }) //just new value
         }
     recur(root).asBlack |> { copy(_, if (changed) 1 else 0) } //side effect: order enforcement (why splitted into 2 expressions)
   }
 
-  def htmlDump = RBMap htmlDumpBase root.htmlDump
+  //creates HTML representation of tree
+  override def htmlDump = RBMap htmlDumpBase root.htmlDump
 
-  def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3]) = {
+  override def traverse[T, T1, T2, T3](pref: T => T1, inf: T => T2, postf: T => T3, transform: BinTreeNode[K, B] => T = identity _): (Stream[T1], Stream[T2], Stream[T3]) = {
     //lazy traverse: stupid, but funny idea, I just tried how far can one push Scala...
     import scala.collection.mutable.Queue
     val a = Queue[() => T1]()
@@ -118,11 +123,9 @@ class RBMap[K, B](
     (f(a), f(b), f(c))
   }
 
-  override def iterator: Iterator[(K, B)] = nodeIterator map { _ pair }
-  def nodeIterator: Iterator[Node] = new NodeIterator()
-  class NodeIterator extends Iterator[Node] {
+  override def iterator: Iterator[(K, B)] = nodeIterator map { _ pair } //in-order iterator
+  def nodeIterator: Iterator[Node] = new Iterator[Node] { //emulates recursion
     import cz.maartyl.Pipe._
-    //emulates recursion
     private val stack = collection.mutable.Stack[Node]()
     push(root)
 
@@ -137,13 +140,19 @@ class RBMap[K, B](
 
 }
 
-//so I don't need to take care of 'null root' cases everytime
 class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] {
+  /**
+   * represents empty RBMap, which thus does not contain any root
+   * only implements abstract methods as stubs
+   * the only interesting method is `conj` which creates actual RBMap
+   * thanks to this, RBMap doesn't need to check null edge condition on every method call
+   */
   import scala.collection.AbstractIterator
   override def size = 0
   protected[this] def builderCreate = RBMap.newBuilder[K, B]
   type Node = RBNode[K, B]
   def mapnil = RBMap()
+  override def toString = "RBMap()"
 
   def firstNode: Node = throw new UnsupportedOperationException("(empty RBMap).first")
   def lastNode: Node = throw new UnsupportedOperationException("(empty RBMap).last")
@@ -153,7 +162,7 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
     def hasNext = false
     def next = null
   }
-  //returns actual tree with node added (conjugate)
+  //returns actual tree with given root 
   def conj[B1 >: B](key: K, value: B1): BinTree[K, B1] =
     new RBMap[K, B1](RBNode.mkBlackLeaf(key, value), 1)(ordering)
 
