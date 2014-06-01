@@ -6,22 +6,22 @@ import cz.maartyl.Pipe._ //impl: |>
 import cz.maartyl.Regex._ //impl: r"regex${a}"
 
 /**
- * Simple app to test RBMap 
+ * Simple app to test RBMap
  * Works as REPL that regenerates file representing current tree structure
  * REPL allows modifing current RBMap, rebuilding it; returning back in history; saving current RBMaps under names and more
- * 
+ *
  * If 0 arguments are given, default file location, in system temporary folder with 'maallrb.html' name, is chosen
- * If 1 argument is given, it is used for file location 
- * 
+ * If 1 argument is given, it is used for file location
+ *
  * @author  Maartyl
- * */
+ */
 
 object Main extends App {
   type BTI = BinTree[Int, Int]
   val stack = scala.collection.mutable.Stack[BTI]()
 
   val FILE = if (args.length > 0) args(0)
-  else (if (System getProperty "os.name" contains "Windows") "%temp%\\maallrb.html" else "/tmp/maallrb.html")
+  else util.Properties.tmpDir + (if (util.Properties isWin) "\\" else "/") + "maallrb.html"
 
   var vars: BinTree[String, BTI] = RBMap("dflt" -> RBMap[Int, Int]()) // I use my RBMap for dictionary ^^ (no delete required...)
 
