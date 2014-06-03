@@ -13,7 +13,7 @@ import scala.annotation.tailrec
  * htmlDump, which returns HTML representation of inner tree sturucture
  *
  *
- * finding size is O(1)
+ * getting size is O(1)
  *
  * @author  Maartyl
  */
@@ -145,13 +145,13 @@ class RBEmpty[K, B]()(implicit val ordering: Ordering[K]) extends BinTree[K, B] 
    * represents empty RBMap, which thus does not contain any root
    * only implements abstract methods as stubs
    * the only interesting method is `conj` which creates actual RBMap
-   * thanks to this, RBMap doesn't need to check null edge condition on every method call
+   * thanks to this, RBMap doesn't need to check edge conditions on every method call
    */
   import scala.collection.AbstractIterator
   override def size = 0
   protected[this] def builderCreate = RBMap.newBuilder[K, B]
   type Node = RBNode[K, B]
-  def mapnil = RBMap()
+  def mapnil = this
   override def toString = "RBMap()"
 
   def firstNode: Node = throw new UnsupportedOperationException("(empty RBMap).first")

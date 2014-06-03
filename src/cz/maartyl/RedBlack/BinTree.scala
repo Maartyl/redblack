@@ -4,12 +4,13 @@ import scala.collection.generic.{ ImmutableSortedMapFactory, CanBuildFrom }
 import scala.collection.immutable.{ MapLike, SortedMap, Queue }
 import scala.collection.{ SortedMapLike, GenTraversableOnce }
 import scala.collection.mutable.Builder
+import scala.annotation.tailrec
 
 /**
  * This is just a stub to declutter main RBMap from inheritance and stuff.
  * Also Programs should use this Trait for type (or just Map), thus will be free from implementation details.
  * One shouldn't work with implementations directly anyway...
- * 
+ *
  * Implements non-intersting, interop with Scala libraries and abstract stubs.
  *
  * Based on TreeMap : Scala
@@ -126,8 +127,29 @@ trait BinTree[K, +B]
 
   def -(key: K): BinTree[K, B] = without(key)
 
-  // TODO: (rangeImpl) find out what this does and implement
-  override def rangeImpl(from: Option[K], until: Option[K]): BinTree[K, B] = this // = new BinTree[A, B](RB.rangeImpl(tree, from, until))
+  // not superbly fast ... (but works... once delete works)
+  override def rangeImpl(from: Option[K], until: Option[K]): BinTree[K, B] = {
+    var nmap = this
+    val it = iterator //can be reused: I'm checking in order
+
+   for (f <- from) {
+      @(inline @tailrec) def loop: Unit = if (it.hasNext) {
+        val c = it.next._1
+        if (ordering.lt(c, f)) { nmap -= c; loop }
+      }
+      loop
+    }
+
+    for (u <- until) {
+      @(inline @tailrec) def loop: Unit = if (it.hasNext) {
+        val c = it.next._1
+        if (ordering.gt(c, u)) { nmap -= c; loop }
+      }
+      loop
+    }
+
+    nmap
+  }
 }
 
 trait BinTreeNode[+A, +B] {
