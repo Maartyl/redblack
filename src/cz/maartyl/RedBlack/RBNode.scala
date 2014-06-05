@@ -6,7 +6,7 @@ package cz.maartyl.RedBlack
  * @author  Maartyl
  * */
 
-sealed trait RBNode[+K, +TVal] extends BinTreeNode[K, TVal] {
+sealed abstract class RBNode[+K, +TVal] extends /*Tuple2[K, TVal](key, value) with*/ BinTreeNode[K, TVal] {
   def isNil: Boolean = false
 
   //#members

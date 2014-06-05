@@ -127,12 +127,12 @@ trait BinTree[K, +B]
 
   def -(key: K): BinTree[K, B] = without(key)
 
-  // not superbly fast ... (but works... once delete works)
+  // not superbly fast ... (but works... once delete works) O(1n)
   override def rangeImpl(from: Option[K], until: Option[K]): BinTree[K, B] = {
     var nmap = this
     val it = iterator //can be reused: I'm checking in order
 
-   for (f <- from) {
+    for (f <- from) { //only traverse first part
       @(inline @tailrec) def loop: Unit = if (it.hasNext) {
         val c = it.next._1
         if (ordering.lt(c, f)) { nmap -= c; loop }
@@ -140,13 +140,8 @@ trait BinTree[K, +B]
       loop
     }
 
-    for (u <- until) {
-      @(inline @tailrec) def loop: Unit = if (it.hasNext) {
-        val c = it.next._1
-        if (ordering.gt(c, u)) { nmap -= c; loop }
-      }
-      loop
-    }
+    //traverse rest //possible improvement: don't test every time after first match
+    for (u <- until) for ((c, _) <- it) if (ordering.gt(c, u)) nmap -= c
 
     nmap
   }
